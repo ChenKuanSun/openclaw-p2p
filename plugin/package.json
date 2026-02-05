@@ -6,12 +6,12 @@
   "author": "OpenClaw Contributors",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw-p2p.git",
+    "url": "https://github.com/ChenKuanSun/openclaw-p2p.git",
     "directory": "plugin"
   },
-  "homepage": "https://github.com/openclaw/openclaw-p2p#readme",
+  "homepage": "https://github.com/ChenKuanSun/openclaw-p2p#readme",
   "bugs": {
-    "url": "https://github.com/openclaw/openclaw-p2p/issues"
+    "url": "https://github.com/ChenKuanSun/openclaw-p2p/issues"
   },
   "keywords": [
     "p2p",
