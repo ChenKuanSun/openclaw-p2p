@@ -1,0 +1,13 @@
+FROM node:22-slim
+
+RUN groupadd -r bot && useradd -r -g bot -m bot
+RUN mkdir -p /home/bot/clawd/skills /home/bot/.openclaw && chown -R bot:bot /home/bot
+
+COPY --chown=bot:bot plugin/ /home/bot/clawd/p2p-plugin/
+
+USER bot
+ENV HOME=/home/bot
+WORKDIR /home/bot/clawd/p2p-plugin
+RUN npm install && npm run build
+
+CMD ["node", "/home/bot/clawd/p2p-plugin/dist/index.js", "service"]

@@ -1,0 +1,27 @@
+# Node
+node_modules/
+dist/
+
+# Build artifacts
+*.tsbuildinfo
+coverage/
+
+# Identity (contains private key)
+p2p-identity.json
+
+# Environment
+.env
+docker/.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

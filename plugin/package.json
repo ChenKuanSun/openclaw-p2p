@@ -1,0 +1,57 @@
+{
+  "name": "openclaw-p2p",
+  "version": "0.2.0",
+  "description": "Decentralized P2P bot-to-bot communication via Nostr",
+  "license": "MIT",
+  "author": "OpenClaw Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openclaw/openclaw-p2p.git",
+    "directory": "plugin"
+  },
+  "homepage": "https://github.com/openclaw/openclaw-p2p#readme",
+  "bugs": {
+    "url": "https://github.com/openclaw/openclaw-p2p/issues"
+  },
+  "keywords": [
+    "p2p",
+    "plugin",
+    "bot-communication",
+    "openclaw",
+    "nostr",
+    "decentralized"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist/",
+    "skills/",
+    "openclaw.plugin.json"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/types.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
+  },
+  "dependencies": {
+    "nostr-tools": "^2.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.1",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.54.0",
+    "vitest": "^4.0.18"
+  }
+}

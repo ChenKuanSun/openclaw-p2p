@@ -1,0 +1,22 @@
+services:
+  alice:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.p2p-test
+    environment:
+      P2P_AGENT_ID: alice
+      P2P_AGENT_NAME: Alice
+      P2P_CAPABILITIES: research,analysis
+      P2P_IPC_PORT: "18799"
+    restart: unless-stopped
+
+  bob:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.p2p-test
+    environment:
+      P2P_AGENT_ID: bob
+      P2P_AGENT_NAME: Bob
+      P2P_CAPABILITIES: coding,devops
+      P2P_IPC_PORT: "18799"
+    restart: unless-stopped

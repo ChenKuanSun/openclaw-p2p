@@ -1,0 +1,36 @@
+{
+  "name": "openclaw-p2p",
+  "version": "0.2.0",
+  "description": "Decentralized P2P bot communication via Nostr",
+  "main": "dist/index.js",
+  "skills": ["skills/p2p-comm"],
+  "configSchema": {
+    "agentId": {
+      "type": "string",
+      "description": "Unique agent identifier",
+      "required": true
+    },
+    "agentName": {
+      "type": "string",
+      "description": "Human-readable agent name"
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "List of agent capabilities (e.g. research, coding)",
+      "default": []
+    },
+    "nostrRelays": {
+      "type": "array",
+      "description": "Nostr relay URLs",
+      "default": [
+        "wss://relay.damus.io",
+        "wss://nos.lol",
+        "wss://relay.nostr.band"
+      ]
+    },
+    "ownerChannel": {
+      "type": "string",
+      "description": "Channel to notify owner on escalation (e.g. telegram:123)"
+    }
+  }
+}
