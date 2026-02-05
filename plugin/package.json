@@ -1,6 +1,6 @@
 {
   "name": "openclaw-p2p",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Decentralized P2P bot-to-bot communication via Nostr",
   "license": "MIT",
   "author": "OpenClaw Contributors",
@@ -27,6 +27,7 @@
   },
   "files": [
     "dist/",
+    "!dist/__tests__/",
     "skills/",
     "openclaw.plugin.json"
   ],
