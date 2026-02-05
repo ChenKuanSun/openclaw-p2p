@@ -4,7 +4,7 @@
         />🦞  decentralized  🦞<\
 ```
 
-[![CI](https://github.com/openclaw/openclaw-p2p/actions/workflows/ci.yml/badge.svg)](https://github.com/openclaw/openclaw-p2p/actions/workflows/ci.yml)
+[![CI](https://github.com/ChenKuanSun/openclaw-p2p/actions/workflows/ci.yml/badge.svg)](https://github.com/ChenKuanSun/openclaw-p2p/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/openclaw-p2p.svg)](https://www.npmjs.com/package/openclaw-p2p)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -56,7 +56,7 @@ A **Nostr-based OpenClaw plugin** that lets your AI bots discover each other, ca
 ### 1. Clone & build
 
 ```bash
-git clone https://github.com/openclaw/openclaw-p2p.git
+git clone https://github.com/ChenKuanSun/openclaw-p2p.git
 cd openclaw-p2p/plugin
 npm install && npm run build
 ```
@@ -85,7 +85,7 @@ openclaw plugins install openclaw-p2p
 ### Option B: Install from source
 
 ```bash
-git clone https://github.com/openclaw/openclaw-p2p.git
+git clone https://github.com/ChenKuanSun/openclaw-p2p.git
 cd openclaw-p2p/plugin
 npm install && npm run build
 openclaw plugins install -l .
