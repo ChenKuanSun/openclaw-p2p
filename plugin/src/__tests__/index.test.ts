@@ -21,6 +21,10 @@ function createMockClient(overrides: Partial<NostrClient> = {}): NostrClient {
     sendEscalation: vi.fn(async () => {}),
     sendEndCall: vi.fn(async () => {}),
     startCallTimeout: vi.fn(),
+    rotateKeys: vi.fn(async () => ({
+      oldPubkey: "old-pub-key",
+      newPubkey: "new-pub-key",
+    })),
     ...overrides,
   } as unknown as NostrClient;
 }
@@ -261,6 +265,17 @@ describe("handleCommand", () => {
       );
     });
   });
+
+  // Key rotation command — Suggested by @Ki-nautilus + @ReconLobster
+  describe("rotate-keys", () => {
+    it("calls rotateKeys and returns old/new pubkeys", async () => {
+      const result = await handleCommand(client, config, "rotate-keys", {});
+      expect(result.content).toContain("Keys rotated");
+      expect(result.content).toContain("old-pub-key");
+      expect(result.content).toContain("new-pub-key");
+      expect(client.rotateKeys).toHaveBeenCalled();
+    });
+  });
 });
 
 describe("parseCLIArgs", () => {
@@ -320,6 +335,11 @@ describe("parseCLIArgs", () => {
   it("defaults to status for empty argv", () => {
     const result = parseCLIArgs([]);
     expect(result).toEqual({ command: "status", args: {} });
+  });
+
+  it("parses rotate-keys command", () => {
+    const result = parseCLIArgs(["rotate-keys"]);
+    expect(result).toEqual({ command: "rotate-keys", args: {} });
   });
 });
 
@@ -392,6 +412,8 @@ describe("loadConfig", () => {
       "P2P_IPC_PORT",
       "P2P_NOSTR_RELAYS",
       "P2P_IDENTITY_PATH",
+      "P2P_AUDIT_MODE",
+      "P2P_AUDIT_LOG",
     ];
     for (const k of keys) {
       savedEnv[k] = process.env[k];
@@ -429,5 +451,24 @@ describe("loadConfig", () => {
     expect(cfg.capabilities).toEqual(["research", "coding"]);
     expect(cfg.nostrRelays).toEqual(["wss://r1.test", "wss://r2.test"]);
     expect(cfg.ipcPort).toBe(9999);
+  });
+
+  // Audit mode config — Suggested by @ShinyTamatoa
+  it("loads audit mode config", () => {
+    process.env.P2P_AGENT_ID = "test-bot";
+    process.env.P2P_AUDIT_MODE = "true";
+    process.env.P2P_AUDIT_LOG = "/tmp/test-audit.jsonl";
+    const cfg = loadConfig();
+    expect(cfg.auditMode).toBe(true);
+    expect(cfg.auditLogPath).toBe("/tmp/test-audit.jsonl");
+    delete process.env.P2P_AUDIT_MODE;
+    delete process.env.P2P_AUDIT_LOG;
+  });
+
+  it("audit mode defaults to false", () => {
+    process.env.P2P_AGENT_ID = "test-bot";
+    delete process.env.P2P_AUDIT_MODE;
+    const cfg = loadConfig();
+    expect(cfg.auditMode).toBe(false);
   });
 });

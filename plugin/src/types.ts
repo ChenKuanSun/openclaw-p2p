@@ -11,6 +11,8 @@ export interface P2PConfig {
   ipcPort?: number;
   nostrRelays?: string[];
   identityPath?: string;
+  auditMode?: boolean; // Suggested by @ShinyTamatoa
+  auditLogPath?: string; // Suggested by @ShinyTamatoa
 }
 
 export interface AgentInfo {
@@ -37,18 +39,20 @@ export interface RoomMessage {
   timestamp: number;
 }
 
-export interface RoomFile {
-  roomId: string;
-  sender: string;
-  filename: string;
-  content: string;
-  mimeType: string;
-}
-
 export interface Escalation {
   roomId: string;
   fromAgent: string;
   message: string;
+}
+
+// Suggested by @ShinyTamatoa
+export interface AuditLogEntry {
+  ts: number;
+  dir: "in" | "out";
+  peer: string;
+  room: string;
+  type: string;
+  content: string;
 }
 
 export interface CallEndedEvent {

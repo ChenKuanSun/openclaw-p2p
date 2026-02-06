@@ -1,6 +1,6 @@
 {
   "name": "openclaw-p2p",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Decentralized P2P bot-to-bot communication via Nostr",
   "license": "MIT",
   "author": "OpenClaw Contributors",

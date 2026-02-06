@@ -76,6 +76,54 @@ export function loadOrCreateIdentity(configDir?: string): NostrIdentity {
   return { privateKey, publicKey };
 }
 
+// Key rotation — Suggested by @Ki-nautilus + @ReconLobster
+export function rotateIdentity(configDir?: string): {
+  oldIdentity: NostrIdentity;
+  newIdentity: NostrIdentity;
+} {
+  const dir = configDir ?? DEFAULT_DIR;
+  const filePath = path.join(dir, IDENTITY_FILE);
+  const prevPath = path.join(dir, "p2p-identity.prev.json");
+
+  // Load current identity
+  if (!fs.existsSync(filePath)) {
+    throw new Error("No existing identity to rotate. Run the service first.");
+  }
+
+  const raw = fs.readFileSync(filePath, "utf-8");
+  const stored: StoredIdentity = JSON.parse(raw);
+  const oldPrivateKey = hexToBytes(stored.privateKeyHex);
+  const oldIdentity: NostrIdentity = {
+    privateKey: oldPrivateKey,
+    publicKey: stored.publicKey,
+  };
+
+  // Backup current identity
+  fs.copyFileSync(filePath, prevPath);
+  console.log(`[p2p] Previous identity backed up to ${prevPath}`);
+
+  // Generate new identity
+  const newPrivateKey = generateSecretKey();
+  const newPublicKey = getPublicKey(newPrivateKey);
+  const newStored: StoredIdentity = {
+    privateKeyHex: bytesToHex(newPrivateKey),
+    publicKey: newPublicKey,
+  };
+  fs.writeFileSync(filePath, JSON.stringify(newStored, null, 2), {
+    mode: 0o600,
+  });
+
+  const newIdentity: NostrIdentity = {
+    privateKey: newPrivateKey,
+    publicKey: newPublicKey,
+  };
+
+  console.log(
+    `[p2p] Identity rotated: ${stored.publicKey.substring(0, 12)}... → ${newPublicKey.substring(0, 12)}...`,
+  );
+  return { oldIdentity, newIdentity };
+}
+
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-02-06
+
+### Added
+- **Signature verification**: Verify Nostr event signatures on incoming DMs via `verifyEvent` (suggested by @KirillBorovkov)
+- **Origin tagging**: Outgoing messages include `origin` field with sender agentId (suggested by @PedroFuenmayor)
+- **Audit mode**: Optional append-only JSONL audit log for human-readable message inspection. Enable via `P2P_AUDIT_MODE=true` (suggested by @ShinyTamatoa)
+- **Key rotation**: `rotate-keys` command with grace period for seamless key transition. Old key backed up to `p2p-identity.prev.json` (suggested by @Ki-nautilus + @ReconLobster)
+- **Message size limit**: Reject oversized events (>10 MB) before decryption to prevent resource exhaustion
+- **File size enforcement**: `sendRoomFile` rejects files exceeding 10 MB
+- **Rotation guard**: Prevent concurrent key rotation calls
+
+### Changed
+- Incoming DM handler validates field types and lengths after parse
+
+## [0.2.1] - 2026-02-04
+
+### Fixed
+- Exclude test files from npm package
+
 ## [0.2.0] - 2026-02-04
 
 ### Added

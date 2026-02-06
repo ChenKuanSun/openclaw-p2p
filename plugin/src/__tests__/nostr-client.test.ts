@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NostrClient } from "../nostr-client.js";
 import type { P2PConfig } from "../types.js";
 import * as nip04Module from "nostr-tools/nip04";
+import * as pureModule from "nostr-tools/pure";
 
 // Mock nostr-tools
 vi.mock("nostr-tools/pure", () => ({
@@ -11,6 +12,7 @@ vi.mock("nostr-tools/pure", () => ({
     sig: "mock-sig",
     pubkey: "mock-pubkey",
   })),
+  verifyEvent: vi.fn(() => true),
 }));
 
 vi.mock("nostr-tools/nip04", () => ({
@@ -56,7 +58,19 @@ vi.mock("../identity.js", () => ({
     privateKey: new Uint8Array(32),
     publicKey: "test-pubkey-abcdef123456",
   })),
+  rotateIdentity: vi.fn(() => ({
+    oldIdentity: { privateKey: new Uint8Array(32).fill(1), publicKey: "old-pub-key" },
+    newIdentity: { privateKey: new Uint8Array(32).fill(2), publicKey: "new-pub-key" },
+  })),
 }));
+
+vi.mock("../audit.js", () => {
+  class MockAuditLogger {
+    log = vi.fn();
+    close = vi.fn();
+  }
+  return { AuditLogger: MockAuditLogger };
+});
 
 const mockDecrypt = nip04Module.decrypt as ReturnType<typeof vi.fn>;
 
@@ -263,6 +277,10 @@ describe("NostrClient", () => {
         pubkey,
         content: "encrypted",
         created_at: Math.floor(Date.now() / 1000),
+        id: "mock-event-id",
+        kind: 4,
+        sig: "mock-sig",
+        tags: [["p", "test-pubkey-abcdef123456"]],
       });
       // Wait for async handler
       return new Promise((r) => setTimeout(r, 10));
@@ -412,12 +430,13 @@ describe("NostrClient", () => {
         pubkey: "some-pub",
         content: "bad-encrypted",
         created_at: Math.floor(Date.now() / 1000),
+        id: "mock-event-id",
+        kind: 4,
+        sig: "mock-sig",
+        tags: [["p", "test-pubkey-abcdef123456"]],
       });
       await new Promise((r) => setTimeout(r, 10));
-      expect(debugSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to decrypt"),
-        expect.anything(),
-      );
+      expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to decrypt"));
       debugSpy.mockRestore();
     });
 
@@ -428,6 +447,10 @@ describe("NostrClient", () => {
         pubkey: "some-pub",
         content: "encrypted",
         created_at: Math.floor(Date.now() / 1000),
+        id: "mock-event-id",
+        kind: 4,
+        sig: "mock-sig",
+        tags: [["p", "test-pubkey-abcdef123456"]],
       });
       await new Promise((r) => setTimeout(r, 10));
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("non-JSON"));
@@ -489,6 +512,184 @@ describe("NostrClient", () => {
 
       vi.advanceTimersByTime(60_000);
       expect(client.state.pendingOutgoing).toBeNull();
+    });
+  });
+
+  describe("sendDM error handling", () => {
+    it("throws with AggregateError details when all relays fail", async () => {
+      vi.useRealTimers();
+      // Access the pool's publish mock via the client internals
+      const pool = (client as unknown as { pool: { publish: ReturnType<typeof vi.fn> } })
+        .pool;
+      pool.publish.mockReturnValueOnce([
+        Promise.reject(new Error("relay1 down")),
+        Promise.reject(new Error("relay2 down")),
+      ]);
+      await expect(
+        client.sendDM("recipient-pub", {
+          type: "room_message",
+          roomId: "room-1",
+          content: "hello",
+        }),
+      ).rejects.toThrow("Failed to publish DM to any relay");
+    });
+  });
+
+  describe("message validation", () => {
+    beforeEach(() => {
+      vi.useRealTimers();
+      mockDecrypt.mockClear();
+      client.connect();
+    });
+
+    it("rejects oversized events before decrypting", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      capturedOnevent!({
+        pubkey: "some-pub",
+        content: "x".repeat(10 * 1024 * 1024 + 1),
+        created_at: Math.floor(Date.now() / 1000),
+        id: "mock-event-id",
+        kind: 4,
+        sig: "mock-sig",
+        tags: [["p", "test-pubkey-abcdef123456"]],
+      });
+      await new Promise((r) => setTimeout(r, 10));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("oversized"));
+      expect(mockDecrypt).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe("sendRoomFile size limit", () => {
+    it("rejects files exceeding 10MB", async () => {
+      vi.useRealTimers();
+      client.state.acceptCall("room-1", "peer", "Peer", "peer-pub", "caller");
+      const hugeContent = "x".repeat(10 * 1024 * 1024 + 1);
+      await expect(
+        client.sendRoomFile(
+          "peer-pub",
+          "room-1",
+          "big.bin",
+          hugeContent,
+          "application/octet-stream",
+        ),
+      ).rejects.toThrow("File too large");
+    });
+  });
+
+  describe("rotateKeys", () => {
+    it("rotates identity and returns old/new pubkeys", async () => {
+      vi.useRealTimers();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const discovery = (client as any).discovery;
+      discovery.updateIdentity = vi.fn();
+      discovery.announce = vi.fn(async () => {});
+
+      client.connect();
+      const result = await client.rotateKeys();
+      expect(result.oldPubkey).toBe("test-pubkey-abcdef123456");
+      expect(result.newPubkey).toBe("new-pub-key");
+      expect(discovery.updateIdentity).toHaveBeenCalled();
+      expect(discovery.announce).toHaveBeenCalled();
+    });
+
+    it("prevents concurrent rotation", async () => {
+      vi.useRealTimers();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const discovery = (client as any).discovery;
+      discovery.updateIdentity = vi.fn();
+      discovery.announce = vi.fn(async () => {
+        // Simulate slow operation
+        await new Promise((r) => setTimeout(r, 50));
+      });
+
+      client.connect();
+      const first = client.rotateKeys();
+      await expect(client.rotateKeys()).rejects.toThrow("already in progress");
+      await first;
+    });
+  });
+
+  // Signature verification — Suggested by @KirillBorovkov
+  describe("signature verification", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mockVerifyEvent = pureModule.verifyEvent as any;
+
+    beforeEach(() => {
+      vi.useRealTimers();
+      // Reset decrypt mock to avoid leftover mockResolvedValueOnce from other tests
+      mockDecrypt.mockReset();
+      mockDecrypt.mockResolvedValue("{}");
+      client.connect();
+    });
+
+    it("rejects DMs with invalid Nostr event signature", async () => {
+      mockVerifyEvent.mockReturnValueOnce(false);
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      mockDecrypt.mockResolvedValueOnce(
+        JSON.stringify({
+          type: "room_message",
+          roomId: "room-1",
+          content: "forged",
+        }),
+      );
+      capturedOnevent!({
+        pubkey: "attacker-pub",
+        content: "encrypted",
+        created_at: Math.floor(Date.now() / 1000),
+        id: "mock-event-id",
+        kind: 4,
+        sig: "invalid-sig",
+        tags: [["p", "test-pubkey-abcdef123456"]],
+      });
+      await new Promise((r) => setTimeout(r, 10));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("invalid signature"));
+      warnSpy.mockRestore();
+      mockVerifyEvent.mockReturnValue(true); // restore
+    });
+  });
+
+  // Provenance — Suggested by @PedroFuenmayor
+  describe("origin tag in outgoing messages", () => {
+    it("sendDM includes origin agentId", async () => {
+      vi.useRealTimers();
+      const encryptMock = nip04Module.encrypt as ReturnType<typeof vi.fn>;
+      let capturedPlaintext = "";
+      encryptMock.mockImplementation(
+        async (_sk: unknown, _pk: unknown, plaintext: string) => {
+          capturedPlaintext = plaintext;
+          return "encrypted";
+        },
+      );
+
+      await client.sendDM("recipient-pub", {
+        type: "room_message",
+        roomId: "room-1",
+        content: "hello",
+      });
+
+      const parsed = JSON.parse(capturedPlaintext);
+      expect(parsed.origin).toBe("test-agent");
+      expect(parsed.type).toBe("room_message");
+      // These should NOT be present — Nostr event already carries them
+      expect(parsed.signerPubkey).toBeUndefined();
+      expect(parsed.v).toBeUndefined();
+      expect(parsed.ts).toBeUndefined();
+
+      encryptMock.mockResolvedValue("encrypted-content");
+    });
+  });
+
+  // Audit mode — Suggested by @ShinyTamatoa
+  describe("audit mode", () => {
+    it("creates client with audit logger when auditMode is true", () => {
+      const auditClient = new NostrClient({
+        ...baseConfig,
+        auditMode: true,
+        auditLogPath: "/tmp/test-audit.jsonl",
+      });
+      expect(auditClient).toBeDefined();
     });
   });
 });

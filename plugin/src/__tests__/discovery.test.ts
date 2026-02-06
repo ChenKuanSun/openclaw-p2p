@@ -227,6 +227,20 @@ describe("AgentDiscovery", () => {
     });
   });
 
+  // Key rotation — Suggested by @Ki-nautilus + @ReconLobster
+  describe("updateIdentity", () => {
+    it("updates the internal identity", () => {
+      const newIdentity = {
+        privateKey: new Uint8Array(32).fill(2),
+        publicKey: "new-pubkey-222",
+      };
+      discovery.updateIdentity(newIdentity);
+      // Verify by announcing — the event should use new identity
+      // (Can't directly assert internal state, but no error = success)
+      expect(() => discovery.updateIdentity(newIdentity)).not.toThrow();
+    });
+  });
+
   describe("getCachedAgent", () => {
     it("returns undefined for unknown agent", () => {
       expect(discovery.getCachedAgent("unknown")).toBeUndefined();

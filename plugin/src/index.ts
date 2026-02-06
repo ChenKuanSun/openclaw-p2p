@@ -44,6 +44,9 @@ export function loadConfig(): P2PConfig {
     ipcPort: intEnv("P2P_IPC_PORT", DEFAULT_IPC_PORT),
     nostrRelays,
     identityPath: process.env.P2P_IDENTITY_PATH,
+    // Audit mode — Suggested by @ShinyTamatoa
+    auditMode: process.env.P2P_AUDIT_MODE === "true",
+    auditLogPath: process.env.P2P_AUDIT_LOG,
   };
 }
 
@@ -273,6 +276,14 @@ export async function handleCommand(
       };
     }
 
+    // Key rotation — Suggested by @Ki-nautilus + @ReconLobster
+    case "rotate-keys": {
+      const { oldPubkey, newPubkey } = await client.rotateKeys();
+      return {
+        content: `Keys rotated.\nOld: ${oldPubkey}\nNew: ${newPubkey}\nGrace period: 5 minutes (accepting messages on both keys).`,
+      };
+    }
+
     default:
       throw new Error(`Unknown command: ${command}`);
   }
@@ -397,6 +408,8 @@ export function parseCLIArgs(argv: string[]): {
         process.exit(1);
       }
       return { command, args: { message: rest.join(" ") } };
+    case "rotate-keys":
+      return { command, args: {} };
     default:
       return { command: command ?? "status", args: {} };
   }

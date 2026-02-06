@@ -141,4 +141,9 @@ export class AgentDiscovery {
     }
     return agent;
   }
+
+  // Update identity after key rotation — Suggested by @Ki-nautilus + @ReconLobster
+  updateIdentity(newIdentity: NostrIdentity): void {
+    this.identity = newIdentity;
+  }
 }
