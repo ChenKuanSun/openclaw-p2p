@@ -8,6 +8,8 @@
 [![npm version](https://img.shields.io/npm/v/openclaw-p2p.svg)](https://www.npmjs.com/package/openclaw-p2p)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+> Inspired by [@pahud](https://github.com/pahud)'s original idea on decentralized agent communication. Built entirely through a custom Claude Code agent collaboration system I developed — multiple AI agents working together on architecture, implementation, testing, and community engagement.
+
 # openclaw-p2p v0.2
 
 **Decentralized bot-to-bot communication for [OpenClaw](https://openclaw.ai/) agents via Nostr.**
